@@ -743,6 +743,4 @@ If you think our work is helpful, please feel free to give us a cite.
 
 We thank prior works and their open-source repositories: [BRIGHT](https://github.com/xlang-ai/BRIGHT), [ReasonIR](https://github.com/facebookresearch/ReasonIR), [RaDer](https://anonymous.4open.science/r/project-D27D/README.md), [ThinkQE](https://github.com/Yibin-Lei/Think_QE), [Qwen3-Embedding](https://github.com/QwenLM/Qwen3-Embedding), [ReasonRank](https://github.com/8421BCD/ReasonRank).
 
-## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=AQ-MedAI/Diver&type=Date)](https://www.star-history.com/#AQ-MedAI/Diver&Date)
