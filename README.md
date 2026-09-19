@@ -1,746 +1,105 @@
+<div align="center">
 
-# DIVER: A Multi-Stage Approach for Reasoning-intensive Information Retrieval
-【 📄 [中文](./README_CN.md) | 📖 [arXiv](https://arxiv.org/pdf/2508.07995) | 🤗 [HF Papers](https://huggingface.co/papers/2508.07995) | 🚀 [Diver Models](https://huggingface.co/AQ-MedAI/Diver-Retriever-4B)| [Wechat](https://github.com/AQ-MedAI/Diver/blob/main/pic/rag_wechat.JPG) 】
+<img src="portfolio-header.svg" alt="Agentic RAG Driver: query expansion, document retrieval and reranking" width="100%" />
 
-While retrieval-augmented generation (RAG) excels at direct knowledge retrieval, it falters on complex queries that require abstract or multi-step reasoning. To bridge this gap, we developed **DIVER**, a retrieval pipeline engineered for these reasoning-intensive tasks.
-DIVER integrates four stages: document pre-processing, iterative LLM-driven query expansion, a specialized retriever fine-tuned on complex synthetic data, and a novel reranker that merges retrieval scores with LLM-generated helpfulness ratings. 
-On the [BRIGHT benchmark](https://brightbenchmark.github.io/), DIVER sets a new state-of-the-art, significantly outperforming other reasoning-aware models (**NDCG 45.8**). These results underscore the effectiveness of integrating deep reasoning into retrieval for solving complex, real-world problems.
-More details can be seen at [Diver paper](https://arxiv.org/abs/2508.07995).
+# Agentic RAG Driver
 
-![Diver-Pipeline](pic/overview_DIVER.png)
+**Reasoning-aware document retrieval for questions that go beyond keyword matching.**
 
-## Key Features
+[Workflow](#how-it-works) · [Explore the code](#explore-the-code) · [Getting started](#getting-started) · [Research reference](#research-and-attribution)
 
-1.LLM-Driven Query Expansion: Intelligently refines the search query.
+Python · Query expansion · Embedding retrieval · Reranking · BRIGHT evaluation
 
-2.Reasoning-Enhanced Retriever: A fine-tuned model that understands complex relationships.
+</div>
 
-3.Merged Reranker: Combines traditional search scores with LLM-based "helpfulness" scores for superior ranking.
+## Overview
 
-## 🎉 Update
+Agentic RAG Driver brings together the retrieval stages of [DIVER](https://github.com/AQ-MedAI/Diver): refine a complex question, retrieve candidate documents and rerank the evidence. It provides Python research scripts, model inference examples and evaluation utilities for exploring retrieval quality.
 
-- [2025-11-20] 🚀 We released our **GroupRank** reranking model [Diver-GroupRank-7B](https://huggingface.co/AQ-MedAI/Diver-GroupRank-7B) and [Diver-GroupRank-32B](https://huggingface.co/AQ-MedAI/Diver-GroupRank-32B). The inference and SFT training code can be found at [./Reranker/rerank_groupwise.py](./Reranker/rerank_groupwise.py) and [./Reranker/train_sft_groupwise_reranker.sh](./Reranker/train_sft_groupwise_reranker.sh). Our Diver-GroupRank-32B achieves **46.8** at BRIGHT via test-time scaling. The details can be found at [GroupRank paper](https://www.arxiv.org/abs/2511.11653).
-- [2025-11-11] Environment installation guide is provided in [./env_requirements/README.md](./env_requirements/README.md) for reproduction. The code for merging pointwise and listwise rerankers is at [./Reranker/rerank_merge_point_and_list.py](./Reranker/rerank_merge_point_and_list.py). 
-- [2025-10-20] 🚀 We released DIVER-Retriever-4B-1020 model at [ModelScope](https://www.modelscope.cn/models/AQ-MedAI/Diver-Retriever-4B-1020) and [Hugging Face](https://huggingface.co/AQ-MedAI/Diver-Retriever-4B-1020), which achieve 31.9 at BRIGHT.
-- [2025-10-14] 🚀 We released DIVER-Retriever-1.7B model at [ModelScope](https://modelscope.cn/models/AQ-MedAI/Diver-Retriever-1.7B) and [Hugging Face](https://huggingface.co/AQ-MedAI/Diver-Retriever-1.7B), which achieve 27.3 at BRIGHT.
-- [2025-09-27] 🎉 Our Diver-Retriever-4B model have achieved monthly 2.64k+ downloads at [🤗 HuggingFace](https://huggingface.co/AQ-MedAI/Diver-Retriever-4B) ! 
-- [2025-09-12] 🚀 We released the code for listwise reranking using Gemini; it can be found at [./Retriever/rerank_listwise.py](./Retriever/rerank_listwise.py), and it achieved a score of 43.9 on BRIGHT.
-- [2025-09-05] 🚀 We released DIVER-Retriever-0.6B model at [ModelScope](https://modelscope.cn/models/AQ-MedAI/Diver-Retriever-0.6B) and [Hugging Face](https://huggingface.co/AQ-MedAI/Diver-Retriever-0.6B), which achieve 25.2 at BRIGHT.
-- [2025-08-28] 🚀 We released our DIVER-Retriever-4B model at [ModelScope](https://modelscope.cn/models/AQ-MedAI/Diver-Retriever-4B).
-- [2025-08-24] 🏆 We released our Diver V2, which reaches 45.8 on [Bright Leaderboard](https://brightbenchmark.github.io/).
-- [2025-08-18] 🚀 We released our full codebase, including inference and SFT training.
+The output is **ranked documents and retrieval scores**. These can support a knowledge assistant or research workflow when integrated with an application and an answer-generation layer.
 
-## TODO List
+| The problem | The approach | The output |
+| --- | --- | --- |
+| Relevant evidence may use different language from the question. | Expand queries using an LLM and retrieved passages. | Refined queries for document search. |
+| An initial search returns candidates with mixed relevance. | Retrieve and compare documents, then apply reranking. | A more focused ranked list of evidence. |
+| Retrieval changes need measurable comparison. | Evaluate on BRIGHT tasks with shared scoring utilities. | Retrieval metrics and saved experiment outputs. |
 
-- ⬜ Release **DIVER-VL-Embedding** and **DIVER-VL-Reranker**: Release source code and models
-- ✅ Release **DIVER-Reranker**: Release source code and models
+## How it works
 
-
-## Model Downloads
-
-You can download the following table to see the various parameters for your use case. If you are located in mainland China, we also provide the model on ModelScope.cn to speed up the download process.
-
-
-|      **Model**       | **#Total Params** | **Context Length** |                                                                        **Download**                                                                        |   **BRIGHT**       |
-| :------------------: | :---------------: | :----------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------: | 
-|    Diver-GroupRank-7B    |       7B       |        32K         |     [🤗 HuggingFace]https://huggingface.co/AQ-MedAI/Diver-GroupRank-7B <br>[🤖 ModelScope]https://www.modelscope.cn/models/AQ-MedAI/Diver-GroupRank-7B | |
-|    Diver-GroupRank-32B    |       32B       |        32K         |     [🤗 HuggingFace]https://huggingface.co/AQ-MedAI/Diver-GroupRank-32B <br>[🤖 ModelScope]https://www.modelscope.cn/models/AQ-MedAI/Diver-GroupRank-32B |  **46.8** |
-|    DIVER-Retriever-4B-1020    |       4B       |        40K         |     [🤗 HuggingFace]https://huggingface.co/AQ-MedAI/Diver-Retriever-4B-1020 <br>[🤖 ModelScope]https://www.modelscope.cn/models/AQ-MedAI/Diver-Retriever-4B-1020     | **31.9** |
-|    DIVER-Retriever-4B    |       4B       |        40K         |     [🤗 HuggingFace]https://huggingface.co/AQ-MedAI/Diver-Retriever-4B <br>[🤖 ModelScope]https://www.modelscope.cn/models/AQ-MedAI/Diver-Retriever-4B     | **28.9** |
-|    DIVER-Retriever-1.7B    |       1.7B       |        40K         |     [🤗 HuggingFace]https://huggingface.co/AQ-MedAI/Diver-Retriever-1.7B <br>[🤖 ModelScope]https://www.modelscope.cn/models/AQ-MedAI/Diver-Retriever-1.7B     | **27.3** |
-|    DIVER-Retriever-0.6B    |       0.6B       |        32K         |     [🤗 HuggingFace]https://huggingface.co/AQ-MedAI/Diver-Retriever-0.6B <br>[🤖 ModelScope]https://www.modelscope.cn/models/AQ-MedAI/Diver-Retriever-0.6B     | **25.2** |
-
-
-## Evaluation
-
-### Overall Evaluation
-
-**Performance comparisons with competitive baselines on the BRIGHT leaderboard. The best result for each dataset is highlighted in bold.**
-
-| Method | Avg. | Bio. | Earth. | Econ. | Psy. | Rob. | Stack. | Sus. | Leet. | Pony | AoPS | TheoQ. | TheoT. |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Rank-R1-14B | 20.5 | 31.2 | 38.5 | 21.2 | 26.4 | 22.6 | 18.9 | 27.5 | 9.2 | 20.2 | 9.7 | 11.9 | 9.2 |
-| Qwen1.5-7B with InteRank-3B | 27.4 | 51.2 | 51.4 | 22.4 | 31.9 | 17.3 | 26.6 | 22.4 | 24.5 | 23.1 | 13.5 | 19.3 | 25.5 |
-| GPT4 with Rank1-32B | 29.4 | 49.7 | 35.8 | 22.0 | 37.5 | 22.5 | 21.7 | 35.0 | 18.8 | 32.5 | 10.8 | 22.9 | 43.7 |
-| ReasonIR with QwenRerank | 36.9 | 58.2 | 53.2 | 32.0 | 43.6 | 28.8 | 37.6 | 36.0 | 33.2 | 34.8 | 7.9 | 32.6 | 45.0 |
-| ReasonIR with Rank-R1-32B | 38.8 | 59.5 | 55.1 | 37.9 | 52.7 | 30.0 | 39.3 | 45.1 | 32.1 | 17.1 | 10.7 | 40.4 | 45.6 |
-| RaDeR with QwenRerank | 39.2 | 58.0 | 59.2 | 33.0 | 49.4 | 31.8 | 39.0 | 36.4 | 33.5 | 33.3 | 10.8 | 34.2 | 51.6 |
-| XRR2 | 40.3 | 63.1 | 55.4 | 38.5 | 52.9 | 37.1 | 38.2 | 44.6 | 21.9 | 35.0 | 15.7 | 34.4 | 46.2 |
-| ReasonRank | 40.8 | 62.72 | 55.53 | 36.7 | 54.64 | 35.69 | 38.03 | 44.81 | 29.46 | 25.56 | 14.38 | 41.99 | 50.06 |
-| **DIVER** | 41.6 | 62.2 | 58.7 | 34.4 | 52.9 | 35.6 | 36.5 | 42.9 | **38.9** | 25.4 | 18.3 | 40.0 | 53.1 |
-| BGE Reasoner | 45.2 | 66.5 | **63.7** | 39.4 | 50.3 | 37 | 42.9 | 43.7 | 35.1 | **44.3** | 17.2 | 44.2 | **58.5** |
-| **DIVER V2** | **45.8** | **68** | 62.5 | **42.0** | **58.2** | **41.5** | **44.3** | **49.2** | 34.8 | 32.9 | **19.1** | **44.3** | 52.6 |
-
-
-### Diver Retriever Evaluation
-
-<table>
-<thead>
-    <tr>
-        <th>Method</th>
-        <th style="text-align:right">Avg.</th>
-        <th style="text-align:right">Bio.</th>
-        <th style="text-align:right">Earth.</th>
-        <th style="text-align:right">Econ.</th>
-        <th style="text-align:right">Psy.</th>
-        <th style="text-align:right">Rob.</th>
-        <th style="text-align:right">Stack.</th>
-        <th style="text-align:right">Sus.</th>
-        <th style="text-align:right">Leet.</th>
-        <th style="text-align:right">Pony</th>
-        <th style="text-align:right">AoPS</th>
-        <th style="text-align:right">TheoQ.</th>
-        <th style="text-align:right">TheoT.</th>
-    </tr>
-</thead>
-<tbody>
-    <tr>
-        <td colspan=12 style="text-align:center"><strong>Evaluate Retriever with Original Query</strong></td>
-    </tr>
-    <tr>
-        <td>BM25</td>
-        <td style="text-align:right">14.5</td>
-        <td style="text-align:right">18.9</td>
-        <td style="text-align:right">27.2</td>
-        <td style="text-align:right">14.9</td>
-        <td style="text-align:right">12.5</td>
-        <td style="text-align:right">13.6</td>
-        <td style="text-align:right">18.4</td>
-        <td style="text-align:right">15.0</td>
-        <td style="text-align:right">24.4</td>
-        <td style="text-align:right">7.9</td>
-        <td style="text-align:right">6.2</td>
-        <td style="text-align:right">10.4</td>
-        <td style="text-align:right">4.9</td>
-    </tr>
-    <tr>
-        <td>SBERT</td>
-        <td style="text-align:right">14.9</td>
-        <td style="text-align:right">15.1</td>
-        <td style="text-align:right">20.4</td>
-        <td style="text-align:right">16.6</td>
-        <td style="text-align:right">22.7</td>
-        <td style="text-align:right">8.2</td>
-        <td style="text-align:right">11.0</td>
-        <td style="text-align:right">15.3</td>
-        <td style="text-align:right">26.4</td>
-        <td style="text-align:right">7.0</td>
-        <td style="text-align:right">5.3</td>
-        <td style="text-align:right">20.0</td>
-        <td style="text-align:right">10.8</td>
-    </tr>
-    <tr>
-        <td>gte-Qwen1.5-7B</td>
-        <td style="text-align:right">22.5</td>
-        <td style="text-align:right">30.6</td>
-        <td style="text-align:right">36.4</td>
-        <td style="text-align:right">17.8</td>
-        <td style="text-align:right">24.6</td>
-        <td style="text-align:right">13.2</td>
-        <td style="text-align:right">22.2</td>
-        <td style="text-align:right">14.8</td>
-        <td style="text-align:right">25.5</td>
-        <td style="text-align:right">9.9</td>
-        <td style="text-align:right">14.4</td>
-        <td style="text-align:right">27.8</td>
-        <td style="text-align:right">32.9</td>
-    </tr>
-    <tr>
-        <td>Qwen3-4B</td>
-        <td style="text-align:right">5.6</td>
-        <td style="text-align:right">3.5</td>
-        <td style="text-align:right">8.0</td>
-        <td style="text-align:right">2.3</td>
-        <td style="text-align:right">2.0</td>
-        <td style="text-align:right">1.6</td>
-        <td style="text-align:right">1.0</td>
-        <td style="text-align:right">4.4</td>
-        <td style="text-align:right">2.1</td>
-        <td style="text-align:right">0.1</td>
-        <td style="text-align:right">4.9</td>
-        <td style="text-align:right">18.0</td>
-        <td style="text-align:right">19.2</td>
-    </tr>
-    <tr>
-        <td>OpenAI</td>
-        <td style="text-align:right">17.9</td>
-        <td style="text-align:right">23.3</td>
-        <td style="text-align:right">26.7</td>
-        <td style="text-align:right">19.5</td>
-        <td style="text-align:right">27.6</td>
-        <td style="text-align:right">12.8</td>
-        <td style="text-align:right">14.3</td>
-        <td style="text-align:right">20.5</td>
-        <td style="text-align:right">23.6</td>
-        <td style="text-align:right">2.4</td>
-        <td style="text-align:right">8.5</td>
-        <td style="text-align:right">23.5</td>
-        <td style="text-align:right">11.7</td>
-    </tr>
-    <tr>
-        <td>Google</td>
-        <td style="text-align:right">20.0</td>
-        <td style="text-align:right">22.7</td>
-        <td style="text-align:right">34.8</td>
-        <td style="text-align:right">19.6</td>
-        <td style="text-align:right">27.8</td>
-        <td style="text-align:right">15.7</td>
-        <td style="text-align:right">20.1</td>
-        <td style="text-align:right">17.1</td>
-        <td style="text-align:right">29.6</td>
-        <td style="text-align:right">3.6</td>
-        <td style="text-align:right">9.3</td>
-        <td style="text-align:right">23.8</td>
-        <td style="text-align:right">15.9</td>
-    </tr>
-    <tr>
-        <td>ReasonIR-8B</td>
-        <td style="text-align:right">24.4</td>
-        <td style="text-align:right">26.2</td>
-        <td style="text-align:right">31.4</td>
-        <td style="text-align:right">23.3</td>
-        <td style="text-align:right">30.0</td>
-        <td style="text-align:right">18.0</td>
-        <td style="text-align:right"><strong>23.9</strong></td>
-        <td style="text-align:right">20.5</td>
-        <td style="text-align:right">35.0</td>
-        <td style="text-align:right">10.5</td>
-        <td style="text-align:right"><strong>14.7</strong></td>
-        <td style="text-align:right">31.9</td>
-        <td style="text-align:right">27.2</td>
-    </tr>
-    <tr>
-        <td>RaDeR-7B</td>
-        <td style="text-align:right">25.5</td>
-        <td style="text-align:right">34.6</td>
-        <td style="text-align:right">38.9</td>
-        <td style="text-align:right">22.1</td>
-        <td style="text-align:right">33.0</td>
-        <td style="text-align:right">14.8</td>
-        <td style="text-align:right">22.5</td>
-        <td style="text-align:right">23.7</td>
-        <td style="text-align:right">37.3</td>
-        <td style="text-align:right">5.0</td>
-        <td style="text-align:right">10.2</td>
-        <td style="text-align:right">28.4</td>
-        <td style="text-align:right">35.1</td>
-    </tr>
-    <tr>
-        <td>Seed1.5-Embedding</td>
-        <td style="text-align:right">27.2</td>
-        <td style="text-align:right">34.8</td>
-        <td style="text-align:right"><strong>46.9</strong></td>
-        <td style="text-align:right"><strong>23.4</strong></td>
-        <td style="text-align:right">31.6</td>
-        <td style="text-align:right">19.1</td>
-        <td style="text-align:right">25.4</td>
-        <td style="text-align:right">21.0</td>
-        <td style="text-align:right"><strong>43.2</strong></td>
-        <td style="text-align:right">4.9</td>
-        <td style="text-align:right">12.2</td>
-        <td style="text-align:right">33.3</td>
-        <td style="text-align:right">30.5</td>
-    </tr>
-    <tr>
-        <td>DIVER-Retriever-0.6B</td>
-        <td style="text-align:right">25.2</td>
-        <td style="text-align:right">36.4</td>
-        <td style="text-align:right">41.9</td>
-        <td style="text-align:right">29.0</td>
-        <td style="text-align:right">31.0</td>
-        <td style="text-align:right">21.2</td>
-        <td style="text-align:right">24.6</td>
-        <td style="text-align:right">23.2</td>
-        <td style="text-align:right">15.6</td>
-        <td style="text-align:right">6.8</td>
-        <td style="text-align:right">8.4</td>
-        <td style="text-align:right">33.2</td>
-        <td style="text-align:right">31.7</td>
-    </tr>
-    <tr>
-        <td>DIVER-Retriever-4B</td>
-        <td style="text-align:right"><strong>28.9</strong></td>
-        <td style="text-align:right"><strong>41.8</strong></td>
-        <td style="text-align:right">43.7</td>
-        <td style="text-align:right">21.7</td>
-        <td style="text-align:right"><strong>35.3</strong></td>
-        <td style="text-align:right"><strong>21.0</strong></td>
-        <td style="text-align:right">21.2</td>
-        <td style="text-align:right"><strong>25.1</strong></td>
-        <td style="text-align:right">37.6</td>
-        <td style="text-align:right"><strong>13.2</strong></td>
-        <td style="text-align:right">10.7</td>
-        <td style="text-align:right"><strong>38.4</strong></td>
-        <td style="text-align:right"><strong>37.3</strong></td>
-    </tr>
-    <tr>
-        <td colspan=12 style="text-align:center"><strong>Evaluate Retriever with GPT-4 REASON-query</strong></td>
-    </tr>
-    <tr>
-        <td>BM25</td>
-        <td style="text-align:right">27.0</td>
-        <td style="text-align:right"><strong>53.6</strong></td>
-        <td style="text-align:right"><strong>54.1</strong></td>
-        <td style="text-align:right">24.3</td>
-        <td style="text-align:right">38.7</td>
-        <td style="text-align:right">18.9</td>
-        <td style="text-align:right">27.7</td>
-        <td style="text-align:right">26.3</td>
-        <td style="text-align:right">19.3</td>
-        <td style="text-align:right">17.6</td>
-        <td style="text-align:right">3.9</td>
-        <td style="text-align:right">19.2</td>
-        <td style="text-align:right">20.8</td>
-    </tr>
-    <tr>
-        <td>SBERT</td>
-        <td style="text-align:right">17.8</td>
-        <td style="text-align:right">18.5</td>
-        <td style="text-align:right">26.3</td>
-        <td style="text-align:right">17.5</td>
-        <td style="text-align:right">27.2</td>
-        <td style="text-align:right">8.8</td>
-        <td style="text-align:right">11.8</td>
-        <td style="text-align:right">17.5</td>
-        <td style="text-align:right">24.3</td>
-        <td style="text-align:right">10.3</td>
-        <td style="text-align:right">5.0</td>
-        <td style="text-align:right">22.3</td>
-        <td style="text-align:right">23.5</td>
-    </tr>
-    <tr>
-        <td>gte-Qwen1.5-7B</td>
-        <td style="text-align:right">24.8</td>
-        <td style="text-align:right">35.5</td>
-        <td style="text-align:right">43.1</td>
-        <td style="text-align:right">24.3</td>
-        <td style="text-align:right">34.3</td>
-        <td style="text-align:right">15.4</td>
-        <td style="text-align:right">22.9</td>
-        <td style="text-align:right">23.9</td>
-        <td style="text-align:right">25.4</td>
-        <td style="text-align:right">5.2</td>
-        <td style="text-align:right">4.6</td>
-        <td style="text-align:right">28.7</td>
-        <td style="text-align:right">34.6</td>
-    </tr>
-    <tr>
-        <td>Qwen3-4B</td>
-        <td style="text-align:right">5.5</td>
-        <td style="text-align:right">1.3</td>
-        <td style="text-align:right">17.3</td>
-        <td style="text-align:right">2.5</td>
-        <td style="text-align:right">6.2</td>
-        <td style="text-align:right">1.0</td>
-        <td style="text-align:right">4.8</td>
-        <td style="text-align:right">4.5</td>
-        <td style="text-align:right">3.0</td>
-        <td style="text-align:right">5.9</td>
-        <td style="text-align:right">0.0</td>
-        <td style="text-align:right">7.2</td>
-        <td style="text-align:right">12.5</td>
-    </tr>
-    <tr>
-        <td>OpenAI</td>
-        <td style="text-align:right">23.3</td>
-        <td style="text-align:right">35.2</td>
-        <td style="text-align:right">40.1</td>
-        <td style="text-align:right">25.1</td>
-        <td style="text-align:right">38.0</td>
-        <td style="text-align:right">13.6</td>
-        <td style="text-align:right">18.2</td>
-        <td style="text-align:right">24.2</td>
-        <td style="text-align:right">24.5</td>
-        <td style="text-align:right">6.5</td>
-        <td style="text-align:right">7.7</td>
-        <td style="text-align:right">22.9</td>
-        <td style="text-align:right">23.8</td>
-    </tr>
-    <tr>
-        <td>Google</td>
-        <td style="text-align:right">26.2</td>
-        <td style="text-align:right">36.4</td>
-        <td style="text-align:right">45.6</td>
-        <td style="text-align:right">25.6</td>
-        <td style="text-align:right">38.2</td>
-        <td style="text-align:right">18.7</td>
-        <td style="text-align:right"><strong>29.5</strong></td>
-        <td style="text-align:right">17.9</td>
-        <td style="text-align:right">31.1</td>
-        <td style="text-align:right">3.7</td>
-        <td style="text-align:right">10.0</td>
-        <td style="text-align:right">27.8</td>
-        <td style="text-align:right">30.4</td>
-    </tr>
-    <tr>
-        <td>ReasonIR-8B</td>
-        <td style="text-align:right">29.9</td>
-        <td style="text-align:right">43.6</td>
-        <td style="text-align:right">42.9</td>
-        <td style="text-align:right"><strong>32.7</strong></td>
-        <td style="text-align:right">38.8</td>
-        <td style="text-align:right">20.9</td>
-        <td style="text-align:right">25.8</td>
-        <td style="text-align:right"><strong>27.5</strong></td>
-        <td style="text-align:right">31.5</td>
-        <td style="text-align:right"><strong>19.6</strong></td>
-        <td style="text-align:right">7.4</td>
-        <td style="text-align:right">33.1</td>
-        <td style="text-align:right">35.7</td>
-    </tr>
-    <tr>
-        <td>RaDeR-7B</td>
-        <td style="text-align:right">29.2</td>
-        <td style="text-align:right">36.1</td>
-        <td style="text-align:right">42.9</td>
-        <td style="text-align:right">25.2</td>
-        <td style="text-align:right">37.9</td>
-        <td style="text-align:right">16.6</td>
-        <td style="text-align:right">27.4</td>
-        <td style="text-align:right">25.0</td>
-        <td style="text-align:right"><strong>34.8</strong></td>
-        <td style="text-align:right">11.9</td>
-        <td style="text-align:right"><strong>12.0</strong></td>
-        <td style="text-align:right">37.7</td>
-        <td style="text-align:right"><strong>43.4</strong></td>
-    </tr>
-    <tr>
-        <td>DIVER-Retriever-4B</td>
-        <td style="text-align:right"><strong>32.1</strong></td>
-        <td style="text-align:right">51.9</td>
-        <td style="text-align:right">53.5</td>
-        <td style="text-align:right">29.5</td>
-        <td style="text-align:right"><strong>41.2</strong></td>
-        <td style="text-align:right"><strong>21.4</strong></td>
-        <td style="text-align:right">27.5</td>
-        <td style="text-align:right">26.1</td>
-        <td style="text-align:right">33.5</td>
-        <td style="text-align:right">11.7</td>
-        <td style="text-align:right">9.5</td>
-        <td style="text-align:right"><strong>39.3</strong></td>
-        <td style="text-align:right">39.7</td>
-    </tr>
-    <tr>
-        <td colspan=12 style="text-align:center"><strong>Evaluate retriever with DIVER-QExpand query</strong></td>
-    </tr>
-    <tr>
-        <td>ReasonIR-8B</td>
-        <td style="text-align:right">32.6</td>
-        <td style="text-align:right">49.4</td>
-        <td style="text-align:right">44.7</td>
-        <td style="text-align:right">32.4</td>
-        <td style="text-align:right">44.0</td>
-        <td style="text-align:right">26.6</td>
-        <td style="text-align:right">31.8</td>
-        <td style="text-align:right">29.0</td>
-        <td style="text-align:right">32.3</td>
-        <td style="text-align:right">12.8</td>
-        <td style="text-align:right">9.1</td>
-        <td style="text-align:right"><strong>40.7</strong></td>
-        <td style="text-align:right">38.4</td>
-    </tr>
-    <tr>
-        <td>+BM25 (Hybrid)</td>
-        <td style="text-align:right">35.7</td>
-        <td style="text-align:right">56.8</td>
-        <td style="text-align:right">53.5</td>
-        <td style="text-align:right"><strong>33.0</strong></td>
-        <td style="text-align:right"><strong>48.5</strong></td>
-        <td style="text-align:right"><strong>29.4</strong></td>
-        <td style="text-align:right"><strong>34.2</strong></td>
-        <td style="text-align:right"><strong>32.0</strong></td>
-        <td style="text-align:right"><strong>35.2</strong></td>
-        <td style="text-align:right">16.8</td>
-        <td style="text-align:right">12.9</td>
-        <td style="text-align:right">39.3</td>
-        <td style="text-align:right">36.8</td>
-    </tr>
-    <tr>
-        <td>DIVER-Retriever</td>
-        <td style="text-align:right"><strong>33.9</strong></td>
-        <td style="text-align:right">54.5</td>
-        <td style="text-align:right">52.7</td>
-        <td style="text-align:right">28.8</td>
-        <td style="text-align:right">44.9</td>
-        <td style="text-align:right">25.1</td>
-        <td style="text-align:right">27.4</td>
-        <td style="text-align:right">29.5</td>
-        <td style="text-align:right">34.5</td>
-        <td style="text-align:right">10.0</td>
-        <td style="text-align:right">14.5</td>
-        <td style="text-align:right"><strong>40.7</strong></td>
-        <td style="text-align:right">44.7</td>
-    </tr>
-    <tr>
-        <td>+BM25 (Hybrid)</td>
-        <td style="text-align:right"><strong>37.2</strong></td>
-        <td style="text-align:right"><strong>60.0</strong></td>
-        <td style="text-align:right"><strong>55.9</strong></td>
-        <td style="text-align:right">31.8</td>
-        <td style="text-align:right">47.9</td>
-        <td style="text-align:right">27.1</td>
-        <td style="text-align:right">33.9</td>
-        <td style="text-align:right">31.9</td>
-        <td style="text-align:right">35.1</td>
-        <td style="text-align:right"><strong>23.1</strong></td>
-        <td style="text-align:right"><strong>16.8</strong></td>
-        <td style="text-align:right">36.9</td>
-        <td style="text-align:right"><strong>46.6</strong></td>
-    </tr>
-    </tbody>
-</table>
-
-
-
-
-## Quickstart
-
-
-### Inference 
-
-#### Reproduction Our Results on BRIGHT benchmark
-One-click reproduction：
-```bash
-sh run_all.sh
-```
-or step-by-step reproduction：
-```
-# 0.1 Download BRIGHT dataset
-cd Diver
-git clone https://huggingface.co/datasets/xlangai/BRIGHT ./data/BRIGHT
-# or modelscope download --dataset xlangai/BRIGHT --local_dir ./data/BRIGHT  # more faster in China
-
-# 0.2 Download models
-mkdir models && cd models
-git clone https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-14B  # for DIVER-QExpand
-git clone https://huggingface.co/AQ-MedAI/Diver-Retriever-4B  # for DIVER-Qexpand and DIVER-Retriever
-cd ..
-
-# 1. DIVER-QExpand
-cd ./QExpand
-bash run_qexpand.sh
-
-# 2. DIVER-Retriever, achiving 33.9 NDCG@10, as reported in Table 3 of our paper: https://arxiv.org/pdf/2508.07995
-cd ../Retriever
-bash retriever_script.sh
-# merge BM25 and DIVER-Retriever scores, achiving 37.2 NDCG@10 in Table 3 of our paper
-python merge_score.py
-
-# 3. DIVER-Reranker (v1 version with only pointwise reranker), achieving 41.6 NDCG@10 as shown in Table 2 of our paper
-# cd ./Retriever
-bash reranker_script.sh  
+```mermaid
+flowchart LR
+    Q[Question] --> E[Query expansion]
+    E --> R[Document retrieval]
+    D[Document corpus] --> R
+    R --> K[Reranking]
+    K --> O[Ranked evidence]
+    O --> V[Retrieval evaluation]
 ```
 
+1. **Expand the question.** Iterative LLM prompts use candidate passages to refine the search query.
+2. **Find candidates.** DIVER embedding retrieval and BM25 experiments provide candidate documents.
+3. **Order the evidence.** Pointwise, listwise and groupwise reranking approaches score relevance.
+4. **Evaluate the results.** BRIGHT tasks and shared metrics make experiment outputs comparable.
 
-#### Different Inference Methods for Diver Retriever
-If you only want to do a simple test, below are examples of how to use the retriever with different frameworks:
-1. Sentence Transformers Usage 
-```bash
-# Requires transformers>=4.51.0
-# Requires sentence-transformers>=2.7.0
+<details>
+<summary><strong>View the original DIVER research architecture</strong></summary>
 
-from sentence_transformers import SentenceTransformer
+![Original DIVER architecture, credited to the DIVER authors](pic/overview_DIVER.png)
 
-# Load the model
-model = SentenceTransformer("AQ-MedAI/Diver-Retriever-4B")
+Source: [DIVER paper](https://arxiv.org/abs/2508.07995).
 
+</details>
 
-# The queries and documents to embed
-queries = [
-    "What is the capital of China?",
-    "Explain gravity",
-]
-documents = [
-    "The capital of China is Beijing.",
-    "Gravity is a force that attracts two bodies towards each other. It gives weight to physical objects and is responsible for the movement of planets around the sun.",
-]
+## Explore the code
 
-# Encode the queries and documents. Note that queries benefit from using a prompt
-# Here we use the prompt called "query" stored under `model.prompts`, but you can
-# also pass your own prompt via the `prompt` argument
-query_embeddings = model.encode(queries, prompt_name="query")
-document_embeddings = model.encode(documents)
+| Component | Start here |
+| --- | --- |
+| Query expansion and passage filtering | [`QExpand/`](QExpand/) |
+| Embedding retrieval and BM25 experiments | [`Retriever/`](Retriever/) |
+| Pointwise, listwise and groupwise reranking | [`Reranker/`](Reranker/) |
+| Scoring and evaluation helpers | [`utils/`](utils/) |
+| Reference dependency setup | [`env_requirements/README.md`](env_requirements/README.md) |
+| Included example experiment files | [`QExpand/output/diver-qexpand/biology/`](QExpand/output/diver-qexpand/biology/) |
 
-# Compute the (cosine) similarity between the query and document embeddings
-similarity = model.similarity(query_embeddings, document_embeddings)
-print(similarity)
-
-```
-
-2. Transformers Usage
-```bash
-# Requires transformers>=4.51.0
-import torch
-import torch.nn.functional as F
-
-from torch import Tensor
-from transformers import AutoTokenizer, AutoModel
-
-
-def last_token_pool(last_hidden_states: Tensor,
-                 attention_mask: Tensor) -> Tensor:
-    left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
-    if left_padding:
-        return last_hidden_states[:, -1]
-    else:
-        sequence_lengths = attention_mask.sum(dim=1) - 1
-        batch_size = last_hidden_states.shape[0]
-        return last_hidden_states[torch.arange(batch_size, device=last_hidden_states.device), sequence_lengths]
-
-
-def get_detailed_instruct(task_description: str, query: str) -> str:
-    return f'Instruct: {task_description}\nQuery:{query}'
-
-# Each query must come with a one-sentence instruction that describes the task
-task = 'Given a web search query, retrieve relevant passages that answer the query'
-
-queries = [
-    get_detailed_instruct(task, 'What is the capital of China?'),
-    get_detailed_instruct(task, 'Explain gravity')
-]
-# No need to add instruction for retrieval documents
-documents = [
-    "The capital of China is Beijing.",
-    "Gravity is a force that attracts two bodies towards each other. It gives weight to physical objects and is responsible for the movement of planets around the sun."
-]
-input_texts = queries + documents
-
-tokenizer = AutoTokenizer.from_pretrained('AQ-MedAI/Diver-Retriever-4B', padding_side='left')
-model = AutoModel.from_pretrained('AQ-MedAI/Diver-Retriever-4B')
-
-
-max_length = 8192
-
-# Tokenize the input texts
-batch_dict = tokenizer(
-    input_texts,
-    padding=True,
-    truncation=True,
-    max_length=max_length,
-    return_tensors="pt",
-)
-batch_dict.to(model.device)
-outputs = model(**batch_dict)
-embeddings = last_token_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
-
-# normalize embeddings
-embeddings = F.normalize(embeddings, p=2, dim=1)
-scores = (embeddings[:2] @ embeddings[2:].T)
-print(scores.tolist())
-# [[0.9319270849227905, 0.5878604054450989], [0.639923095703125, 0.7950234413146973]]
-```
-
-3. vLLM usage
-```python
-# Requires vllm>=0.8.5
-import torch
-import vllm
-from vllm import LLM
-
-def get_detailed_instruct(task_description: str, query: str) -> str:
-    return f'Instruct: {task_description}\nQuery:{query}'
-
-# Each query must come with a one-sentence instruction that describes the task
-task = 'Given a web search query, retrieve relevant passages that answer the query'
-
-queries = [
-    get_detailed_instruct(task, 'What is the capital of China?'),
-    get_detailed_instruct(task, 'Explain gravity')
-]
-# No need to add instruction for retrieval documents
-documents = [
-    "The capital of China is Beijing.",
-    "Gravity is a force that attracts two bodies towards each other. It gives weight to physical objects and is responsible for the movement of planets around the sun."
-]
-input_texts = queries + documents
-
-model = LLM(model="AQ-MedAI/Diver-Retriever-4B", task="embed")
-
-outputs = model.embed(input_texts)
-embeddings = torch.tensor([o.outputs.embedding for o in outputs])
-scores = (embeddings[:2] @ embeddings[2:].T)
-```
-
-
-
-## Finetuning
-
-We recommend you to use [swift](https://github.com/modelscope/ms-swift) to finetune our DIVER-Retriever-4B with infonce.
-
-Before starting training, please ensure your environment is properly configured.
+## Getting started
 
 ```bash
-pip install ms-swift -U
-# Install from source
-pip install git+https://github.com/modelscope/ms-swift.git
-
-pip install transformers -U
-
-# Optional packages
-pip install deepspeed # multi-GPU training
-pip install liger-kernel # save GPU memory resources
-pip install flash-attn --no-build-isolation
+git clone https://github.com/nwk0112-collab/Agentic-Rag-Driver.git
+cd Agentic-Rag-Driver
 ```
 
-### Training Data Preparation
+The full research pipeline uses local language models and CUDA-oriented dependencies, including vLLM and FlashAttention. GPU capacity, model paths and dataset locations need to be configured for the selected experiment.
 
-```json
-# LLM
-{"query": "sentence1", "response":  "sentence2"}
-# MLLM
-{"query": "<image>", "response":  "sentence", "images": "/some/images.jpg"}
-{"query": "<image>sentence1", "response":  "<image>sentence2", "rejected_response": ["<image>sentence1", "<image>sentence2"], "images": ["/some/images.jpg", "/some/images.jpg", "/some/images.jpg", "/some/images.jpg"]}
-```
+1. Review the [environment guide](env_requirements/README.md).
+2. Download the [BRIGHT dataset](https://huggingface.co/datasets/xlangai/BRIGHT) and place its `examples/` and `documents/` files under the existing `data/BRIGHT/` directory.
+3. Obtain the required [DIVER model weights](https://huggingface.co/AQ-MedAI/Diver-Retriever-4B) and generation/reranking models. Update their local paths in the component scripts.
+4. Align the tasks and output locations between query expansion, retrieval and reranking before running each stage.
 
-### Training Command
+**Execution status:** the inherited launcher scripts need adjustments before a complete run. This repository is not presented as a verified one-command application or a hosted chat demo.
 
-Using the infonce loss as an example, the complete training command is as follows:
+<details>
+<summary><strong>Configuration notes and known launcher inconsistencies</strong></summary>
 
-```bash
-nproc_per_node=8
-NPROC_PER_NODE=$nproc_per_node \
-swift sft \
-    --model DIVER/DIVER-Retriever-4B \
-    --task_type embedding \
-    --model_type qwen3_emb \
-    --train_type full \
-    --dataset your_dataset \
-    --split_dataset_ratio 0.05 \
-    --eval_strategy steps \
-    --output_dir output \
-    --eval_steps 20 \
-    --num_train_epochs 5 \
-    --save_steps 20 \
-    --per_device_train_batch_size 4 \
-    --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 4 \
-    --learning_rate 6e-6 \
-    --loss_type infonce \
-    --label_names labels \
-    --dataloader_drop_last true \
-    --deepspeed zero3
-```
+- The dependency list contains `python==3.10.15`; treat this as an interpreter-version reference, not a pip package.
+- `QExpand/run_qexpand.sh` contains a trailing dot on the retriever model path and inconsistent `model/` versus `models/` paths.
+- `QExpand/qexpand_main.py` calls `calculate_retrieval_metrics` without importing or defining it. A shared implementation is available in `utils/eval_util.py`.
+- Query expansion selects `biology` by default, while later launchers select all 12 tasks. Match the task lists and expansion-output locations.
+- `Retriever/merge_scores.py` combines pointwise and listwise scores; it is not a replacement for the inherited `merge_score.py` BM25/dense-fusion command.
+- The pointwise reranker accepts `--model_path`, while its launcher passes `--llm_model`. The groupwise example should reference the existing `rerank_groupwise.py` filename.
+- `run_all.sh` retains inherited directory and command assumptions. Review stage handoffs before using it.
 
+These notes come from source inspection. A full model run and independent reproduction of the published benchmark results have not been verified for this documentation refresh.
 
+</details>
 
-## Citation
+## Research and attribution
 
-If you think our work is helpful, please feel free to give us a cite.
+This repository is based on **DIVER**, developed by Meixiu Long, Duolin Sun, Dan Yang, Junjie Wang, Yue Shen, Jian Wang, Peng Wei, Jinjie Gu and Jiahai Wang. The models, research methods and published benchmark results are credited to the original authors.
 
-```
-@misc{DIVER,
-      title={DIVER: A Multi-Stage Approach for Reasoning-intensive Information Retrieval}, 
-      author={Meixiu Long and Duolin Sun and Dan Yang and Junjie Wang and Yue Shen and Jian Wang and Peng Wei and Jinjie Gu and Jiahai Wang},
-      year={2025},
-      eprint={2508.07995},
-      archivePrefix={arXiv},
-      primaryClass={cs.IR},
-      url={https://arxiv.org/abs/2508.07995}, 
-}
-```
+- [Original DIVER repository](https://github.com/AQ-MedAI/Diver)
+- [DIVER paper](https://arxiv.org/abs/2508.07995) · [GroupRank paper](https://arxiv.org/abs/2511.11653)
+- [Detailed research documentation, examples and citation](DIVER_REFERENCE.md)
+- [Original Chinese documentation](README_CN.md)
+- [Apache 2.0 licence](LICENSE.txt)
 
-## Acknowledgement
-
-We thank prior works and their open-source repositories: [BRIGHT](https://github.com/xlang-ai/BRIGHT), [ReasonIR](https://github.com/facebookresearch/ReasonIR), [RaDer](https://anonymous.4open.science/r/project-D27D/README.md), [ThinkQE](https://github.com/Yibin-Lei/Think_QE), [Qwen3-Embedding](https://github.com/QwenLM/Qwen3-Embedding), [ReasonRank](https://github.com/8421BCD/ReasonRank).
-
-
+The detailed research reference preserves the upstream releases, model tables, evaluation results and acknowledgements. Published results are reference material, not a claim of independently reproduced performance in this repository.
